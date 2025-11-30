@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
           position: user.position,
           department: user.department,
           avatar: user.avatar,
+          banner: user.banner,
         },
       },
       { status: 200 }
@@ -113,6 +114,7 @@ export async function PUT(request: NextRequest) {
           position: user.position,
           department: user.department,
           avatar: user.avatar,
+          banner: user.banner,
         },
       },
       { status: 200 }

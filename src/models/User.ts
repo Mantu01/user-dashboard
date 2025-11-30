@@ -11,6 +11,7 @@ export interface IUser extends Document {
   position: string;
   department: string;
   avatar?: string;
+  banner?: string;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -59,6 +60,10 @@ const UserSchema = new Schema<IUser>(
       default: '',
     },
     avatar: {
+      type: String,
+      default: '',
+    },
+    banner: {
       type: String,
       default: '',
     },

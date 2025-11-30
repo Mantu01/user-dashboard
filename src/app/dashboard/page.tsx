@@ -8,17 +8,23 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Camera, Mail, Phone, User, Lock, Edit3, Save, Shield, Loader2, LogOut } from 'lucide-react'
+import { Camera, Mail, Phone, User, Lock, Edit3, Save, Shield, Loader2, LogOut, Image as ImageIcon } from 'lucide-react'
 import axios from 'axios'
+import { useToast, ToastContainer } from '@/components/ui/toast'
 
 export default function Dashboard() {
   const router = useRouter()
+  const { toasts, showToast, removeToast } = useToast()
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
   const [passwordLoading, setPasswordLoading] = React.useState(false)
+  const [avatarLoading, setAvatarLoading] = React.useState(false)
+  const [bannerLoading, setBannerLoading] = React.useState(false)
   const [error, setError] = React.useState('')
   const [success, setSuccess] = React.useState('')
+  const [avatar, setAvatar] = React.useState('')
+  const [banner, setBanner] = React.useState('')
   const [userData, setUserData] = React.useState({
     name: "",
     email: "",
@@ -32,6 +38,8 @@ export default function Dashboard() {
     newPassword: "",
     confirmPassword: ""
   })
+  const avatarInputRef = React.useRef<HTMLInputElement>(null)
+  const bannerInputRef = React.useRef<HTMLInputElement>(null)
 
   // Fetch user profile on mount
   React.useEffect(() => {
@@ -51,12 +59,15 @@ export default function Dashboard() {
           position: response.data.user.position || "",
           department: response.data.user.department || ""
         })
+        setAvatar(response.data.user.avatar || '')
+        setBanner(response.data.user.banner || '')
       }
     } catch (err: any) {
       if (err.response?.status === 401) {
         router.push('/')
       } else {
         setError(err.response?.data?.error || 'Failed to load profile')
+        showToast(err.response?.data?.error || 'Failed to load profile', 'error')
       }
     } finally {
       setLoading(false)
@@ -71,11 +82,14 @@ export default function Dashboard() {
       const response = await axios.put('/api/user/profile', userData)
       if (response.data) {
         setSuccess('Profile updated successfully!')
+        showToast('Profile updated successfully!', 'success')
         setIsEditing(false)
         setTimeout(() => setSuccess(''), 3000)
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update profile')
+      const errorMsg = err.response?.data?.error || 'Failed to update profile'
+      setError(errorMsg)
+      showToast(errorMsg, 'error')
     } finally {
       setSaving(false)
     }
@@ -88,7 +102,9 @@ export default function Dashboard() {
       setSuccess('')
       
       if (passwordData.newPassword !== passwordData.confirmPassword) {
-        setError('New passwords do not match')
+        const errorMsg = 'New passwords do not match'
+        setError(errorMsg)
+        showToast(errorMsg, 'error')
         setPasswordLoading(false)
         return
       }
@@ -101,6 +117,7 @@ export default function Dashboard() {
       
       if (response.data) {
         setSuccess('Password updated successfully!')
+        showToast('Password updated successfully!', 'success')
         setPasswordData({
           currentPassword: "",
           newPassword: "",
@@ -109,9 +126,95 @@ export default function Dashboard() {
         setTimeout(() => setSuccess(''), 3000)
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to update password')
+      const errorMsg = err.response?.data?.error || 'Failed to update password'
+      setError(errorMsg)
+      showToast(errorMsg, 'error')
     } finally {
       setPasswordLoading(false)
+    }
+  }
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file', 'error')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image size must be less than 5MB', 'error')
+      return
+    }
+
+    try {
+      setAvatarLoading(true)
+      const formData = new FormData()
+      formData.append('avatar', file)
+
+      const response = await axios.put('/api/user/avatar', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (response.data.avatar) {
+        setAvatar(response.data.avatar)
+        showToast('Avatar updated successfully!', 'success')
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || 'Failed to update avatar'
+      showToast(errorMsg, 'error')
+    } finally {
+      setAvatarLoading(false)
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = ''
+      }
+    }
+  }
+
+  const handleBannerChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      showToast('Please select an image file', 'error')
+      return
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      showToast('Image size must be less than 10MB', 'error')
+      return
+    }
+
+    try {
+      setBannerLoading(true)
+      const formData = new FormData()
+      formData.append('banner', file)
+
+      const response = await axios.put('/api/user/banner', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      if (response.data.banner) {
+        setBanner(response.data.banner)
+        showToast('Banner updated successfully!', 'success')
+      }
+    } catch (err: any) {
+      const errorMsg = err.response?.data?.error || 'Failed to update banner'
+      showToast(errorMsg, 'error')
+    } finally {
+      setBannerLoading(false)
+      if (bannerInputRef.current) {
+        bannerInputRef.current.value = ''
+      }
     }
   }
 
@@ -138,9 +241,15 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-linear-to-br from-black via-gray-900 to-green-900">
+      <ToastContainer toasts={toasts} onClose={removeToast} />
+      
       {/* Banner */}
-      <div className="h-48 bg-linear-to-r from-green-600 to-green-800 relative">
-        <div className="absolute top-4 right-4">
+      <div 
+        className="h-48 bg-linear-to-r from-green-600 to-green-800 relative bg-cover bg-center"
+        style={banner ? { backgroundImage: `url(${banner})` } : {}}
+      >
+        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute top-4 right-4 z-10">
           <Button
             onClick={handleLogout}
             className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
@@ -150,16 +259,62 @@ export default function Dashboard() {
             Logout
           </Button>
         </div>
-        <div className="absolute -bottom-16 left-8">
-          <Avatar className="h-32 w-32 border-4 border-background">
-            <AvatarImage src="/api/placeholder/128/128" alt="Profile" />
-            <AvatarFallback className="bg-green-600 text-white text-2xl font-bold">
-              {userData.name ? userData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <Button className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-green-600 hover:bg-green-700 p-0">
-            <Camera className="h-4 w-4" />
+        <div className="absolute top-4 left-4 z-10">
+          <input
+            ref={bannerInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleBannerChange}
+            className="hidden"
+            id="banner-upload"
+          />
+          <Button
+            onClick={() => bannerInputRef.current?.click()}
+            className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+            variant="outline"
+            disabled={bannerLoading}
+          >
+            {bannerLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <ImageIcon className="h-4 w-4 mr-2" />
+                {banner ? 'Change Banner' : 'Upload Banner'}
+              </>
+            )}
           </Button>
+        </div>
+        <div className="absolute -bottom-16 left-8 z-10">
+          <div className="relative">
+            <Avatar className="h-32 w-32 border-4 border-background">
+              <AvatarImage src={avatar || "/api/placeholder/128/128"} alt="Profile" />
+              <AvatarFallback className="bg-green-600 text-white text-2xl font-bold">
+                {userData.name ? userData.name.split(' ').map(n => n[0]).join('').toUpperCase() : 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <input
+              ref={avatarInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleAvatarChange}
+              className="hidden"
+              id="avatar-upload"
+            />
+            <Button
+              onClick={() => avatarInputRef.current?.click()}
+              className="absolute bottom-2 right-2 h-8 w-8 rounded-full bg-green-600 hover:bg-green-700 p-0 disabled:opacity-50"
+              disabled={avatarLoading}
+            >
+              {avatarLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin text-white" />
+              ) : (
+                <Camera className="h-4 w-4 text-white" />
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 

@@ -2,8 +2,7 @@ import jwt from 'jsonwebtoken';
 import { NextRequest } from 'next/server';
 import { IUser } from '@/models/User';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+const JWT_SECRET = process.env.JWT_SECRET!;
 
 export interface TokenPayload {
   userId: string;
@@ -16,9 +15,7 @@ export function generateToken(user: IUser): string {
     email: user.email,
   };
 
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
+  return jwt.sign(payload,JWT_SECRET!, { expiresIn: '7d' });
 }
 
 export function verifyToken(token: string): TokenPayload | null {
