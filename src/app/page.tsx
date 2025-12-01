@@ -11,7 +11,6 @@ export default function Home() {
   const [checkingAuth, setCheckingAuth] = React.useState(true)
 
   React.useEffect(() => {
-    // Check if user is already authenticated
     const checkAuth = async () => {
       try {
         const response = await axios.get('/api/auth/me')
@@ -19,7 +18,6 @@ export default function Home() {
           router.push('/dashboard')
         }
       } catch (error) {
-        // User is not authenticated, stay on login page
       } finally {
         setCheckingAuth(false)
       }

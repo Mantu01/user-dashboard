@@ -17,8 +17,6 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Find user by email or username
     const user = await User.findOne({
       $or: [
         { email: identifier.toLowerCase() },
